@@ -1,6 +1,6 @@
 # bug_squasher-2
 
-New version of 'Bug Squasher', to test my remade library: GFraMe.
+New version of 'Bug Squasher', to test "new" remade library: GFraMe v2.
 
 ## Requirements
 
