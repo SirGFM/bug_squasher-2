@@ -4,6 +4,9 @@
  * Game's entry point; Spawns a thread for loading all the assets and then
  * starts the game
  */
+#include <BugSquasher2/gameCtx.h>
+#include <BugSquasher2/state_mainMenu.h>
+
 #include <GFraMe/gframe.h>
 #include <GFraMe/gfmAssert.h>
 #include <GFraMe/gfmError.h>
@@ -25,35 +28,6 @@
 #define COLOR_KEY  0xff00ff
 /** Basic FPS */
 #define FPS        60
-
-/**  Define the possible game states */
-enum enGameState {
-    game_mainMenu = 0,
-    game_maxState,
-};
-typedef enum enGameState gameState;
-
-/** Struct used to keep the game context and all it's "static" stuff (like 
- * assets and such...) */
-struct stGameCtx {
-    /** Currently playing state */
-    gameState state;
-    /** The actualy library context */
-    gfmCtx *pCtx;
-    /** 8x8 spriteset */
-    gfmSpriteset *pSset8x8;
-    /** 8x16 spriteset */
-    gfmSpriteset *pSset8x16;
-    /** 16x16 spriteset */
-    gfmSpriteset *pSset16x16;
-    /** 32x32 spriteset */
-    gfmSpriteset *pSset32x32;
-    /** Whether the game is running or something stopped it (code-wise) */
-    int isRunning;
-    /** Texture's handle */
-    int iTex;
-};
-typedef struct stGameCtx gameCtx;
 
 /**
  * Loads all game's assets
@@ -147,9 +121,10 @@ int main(int argc, char *argv[]) {
         ASSERT_NR(rv == GFMRV_OK);
         
         switch(game.state) {
-            // TODO case game_mainMenu: mainMenu(&game); break;
-            default: {}
+            case game_mainMenu: rv = state_mainMenu(&game); break;
+            default: rv = GFMRV_INTERNAL_ERROR;
         }
+        ASSERT_NR(rv == GFMRV_OK);
     }
     
     rv = GFMRV_OK;
