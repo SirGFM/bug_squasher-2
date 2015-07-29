@@ -15,6 +15,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+int titleData[] = {
+#include "../assets/title.csv"
+};
+
 /** Main menu struct */
 struct stMainMenuCtx {
     /** A tilemap to show the title, in 8x8 tiles */
@@ -29,6 +33,7 @@ struct stMainMenuCtx {
  */
 static gfmRV state_mainMenu_init(gameCtx *pGame) {
     gfmRV rv;
+    int i;
     mainMenuCtx *pMainMenu;
     
     // Sanitize arguments
@@ -41,8 +46,23 @@ static gfmRV state_mainMenu_init(gameCtx *pGame) {
     // Clean it
     memset(pMainMenu, 0x0, sizeof(mainMenuCtx));
     
+    // Fix the tile data
+    i = 0;
+    while (i < sizeof(titleData) / sizeof(int)) {
+        if (titleData[i] == 49) {
+            titleData[i] = -1;
+        }
+        else {
+            titleData[i] += 64;
+        }
+        i++;
+    }
     // Alloc and initialize the title
     rv = gfmTilemap_getNew(&(pMainMenu->pTitle));
+    ASSERT_NR(rv == GFMRV_OK);
+    rv = gfmTilemap_init(pMainMenu->pTitle, pGame->pSset8x8, 32, 16, -1);
+    ASSERT_NR(rv == GFMRV_OK);
+    rv = gfmTilemap_loadStatic(pMainMenu->pTitle, titleData, 32, 16);
     ASSERT_NR(rv == GFMRV_OK);
     
     // TODO initialize everything else
@@ -94,7 +114,17 @@ static gfmRV state_mainMenu_update(gameCtx *pGame) {
  * @param  pGame The game "global" context
  */
 static gfmRV state_mainMenu_draw(gameCtx *pGame) {
-    return GFMRV_OK;
+    gfmRV rv;
+    mainMenuCtx *pMainMenu;
+    
+    pMainMenu = pGame->pMainMenu;
+    
+    rv = gfmTilemap_draw(pMainMenu->pTitle, pGame->pCtx);
+    ASSERT_NR(rv == GFMRV_OK);
+    
+    rv = GFMRV_OK;
+__ret:
+    return rv;
 }
 
 /**
