@@ -10,6 +10,7 @@
 #include <GFraMe/gfmAssert.h>
 #include <GFraMe/gfmError.h>
 #include <GFraMe/gfmSpriteset.h>
+#include <GFraMe/gfmText.h>
 #include <GFraMe/gfmTilemap.h>
 
 #include <stdlib.h>
@@ -19,21 +20,35 @@
 int titleData[] = {
 #include "../assets/title.csv"
 };
-/** Backgroun data for the tilemap */
+/** Background data for the tilemap */
 int backgroundData[] = {
 #include "../assets/background.csv"
+};
+/** Floor data for the tilemap */
+int floorData[] = {
+#include "../assets/floor.csv"
 };
 
 /** Main menu struct */
 struct stMainMenuCtx {
+    /** "touch to play" text */
+    gfmText *pText;
     /** A tilemap to show the title, in 8x8 tiles */
     gfmTilemap *pTitle;
     /** A tilemap to show the background, in 8x8 tiles */
     gfmTilemap *pBackground;
+    /** A tilemap to show the floor, in 16x tiles */
+    gfmTilemap *pFloor;
     /** Current position in the "title animation" (copying of the tilemap) */
     int titleAnimation;
     /** Accumulator for the animation */
     int animationTime;
+    /** How many frames (at 60 fps) the animation takes */
+    int numAnimFrames;
+    /** How many frames have passed */
+    int frameCount;
+    /** Text to display or hide the text */
+    int textTimer;
 };
 
 /**
@@ -44,6 +59,7 @@ struct stMainMenuCtx {
  */
 static gfmRV state_mainMenu_init(gameCtx *pGame) {
     gfmRV rv;
+    int i;
     mainMenuCtx *pMainMenu;
     
     // Sanitize arguments
@@ -71,8 +87,35 @@ static gfmRV state_mainMenu_init(gameCtx *pGame) {
     ASSERT_NR(rv == GFMRV_OK);
     rv = gfmTilemap_loadStatic(pMainMenu->pBackground, backgroundData, 40, 8);
     ASSERT_NR(rv == GFMRV_OK);
-    rv = gfmTilemap_setPosition(pMainMenu->pBackground, 0, 56);
+    
+    // Alloc and load the floor
+    rv = gfmTilemap_getNew(&(pMainMenu->pFloor));
     ASSERT_NR(rv == GFMRV_OK);
+    rv = gfmTilemap_init(pMainMenu->pFloor, pGame->pSset16x16, 20, 8, -1);
+    ASSERT_NR(rv == GFMRV_OK);
+    rv = gfmTilemap_loadStatic(pMainMenu->pFloor, floorData, 20, 4);
+    ASSERT_NR(rv == GFMRV_OK);
+    
+    // Alloc and initialize the "touch to play" text
+    rv = gfmText_getNew(&(pMainMenu->pText));
+    ASSERT_NR(rv == GFMRV_OK);
+    rv = gfmText_init(pMainMenu->pText, 96/*x*/, 168/*y*/, 17/*maxWidth*/,
+            1/*maxLines*/, 0/*delay*/, 0/*doBindToScreen*/, pGame->pSset8x8,
+            0/*firstTile*/);
+    ASSERT_NR(rv == GFMRV_OK);
+    // TODO Initialize accordingly with desktop or mobile
+    rv = gfmText_setTextStatic(pMainMenu->pText, "--TOUCH TO PLAY--", 1);
+    ASSERT_NR(rv == GFMRV_OK);
+    
+    // Count how many frames there will be in the animation
+    pMainMenu->numAnimFrames = 0;
+    i = 0;
+    while (i < sizeof(titleData) / sizeof(int)) {
+        if (titleData[i] != -1) {
+            pMainMenu->numAnimFrames++;
+        }
+        i++;
+    }
     
     // TODO initialize everything else
     
@@ -99,6 +142,11 @@ static gfmRV state_mainMenu_clean(gameCtx *pGame) {
     gfmTilemap_free(&(pGame->pMainMenu->pTitle));
     // Clean the background
     gfmTilemap_free(&(pGame->pMainMenu->pBackground));
+    // Clean the floor
+    gfmTilemap_free(&(pGame->pMainMenu->pFloor));
+    // Clean the text
+    gfmText_free(&(pGame->pMainMenu->pText));
+    
     // TODO Clean everything
     
     // Dealloc and clean the main menu
@@ -117,7 +165,7 @@ __ret:
  */
 static gfmRV state_mainMenu_update(gameCtx *pGame) {
     gfmRV rv;
-    int elapsed;
+    int camWidth, camHeight, elapsed, y;
     mainMenuCtx *pMainMenu;
     
     // Sanitize arguments
@@ -146,11 +194,37 @@ static gfmRV state_mainMenu_update(gameCtx *pGame) {
             rv = gfmTilemap_getData(&pData, pMainMenu->pTitle);
             ASSERT_NR(rv == GFMRV_OK);
             // Update the tile
-            pData[pMainMenu->titleAnimation] = titleData[pMainMenu->titleAnimation];
+            pData[pMainMenu->titleAnimation] =
+                    titleData[pMainMenu->titleAnimation];
             
             pMainMenu->titleAnimation++;
+            pMainMenu->frameCount++;
         }
         pMainMenu->animationTime -= 16;
+    }
+    
+    // Get the game's dimensions
+    rv = gfm_getCameraDimensions(&camWidth, &camHeight, pGame->pCtx);
+    ASSERT_NR(rv == GFMRV_OK);
+    
+    // Animate the BG and floor position
+    // BG position is calculate as "-height + (height + pos) * alpha" to start
+    // it outside the screen and move until 'pos'
+    y = -128 + (128 + 56) * pMainMenu->frameCount / pMainMenu->numAnimFrames;
+    rv = gfmTilemap_setPosition(pMainMenu->pBackground, 0, y);
+    ASSERT_NR(rv == GFMRV_OK);
+    // For the same reason, the floor position is calculated as
+    // "WND_HEIGHT - (WND_HEIGHT - pos) * alpha"
+    y = camHeight - (camHeight - 176) * pMainMenu->frameCount /
+            pMainMenu->numAnimFrames;
+    rv = gfmTilemap_setPosition(pMainMenu->pFloor, 0, y);
+    ASSERT_NR(rv == GFMRV_OK);
+    
+    // Update the text timer (it will only render on positive times, and should
+    // flick every half second)
+    pMainMenu->textTimer += elapsed;
+    if (pMainMenu->textTimer >= 500) {
+        pMainMenu->textTimer -= 1000;
     }
     
     rv = GFMRV_OK;
@@ -176,9 +250,18 @@ static gfmRV state_mainMenu_draw(gameCtx *pGame) {
     // Draw the background
     rv = gfmTilemap_draw(pMainMenu->pBackground, pGame->pCtx);
     ASSERT_NR(rv == GFMRV_OK);
+    // Draw the floor
+    rv = gfmTilemap_draw(pMainMenu->pFloor, pGame->pCtx);
+    ASSERT_NR(rv == GFMRV_OK);
     // Draw the title
     rv = gfmTilemap_draw(pMainMenu->pTitle, pGame->pCtx);
     ASSERT_NR(rv == GFMRV_OK);
+    
+    // Draw the text
+    if (pMainMenu->textTimer >= 0) {
+        rv = gfmText_draw(pMainMenu->pText, pGame->pCtx);
+        ASSERT_NR(rv == GFMRV_OK);
+    }
     
     rv = GFMRV_OK;
 __ret:
