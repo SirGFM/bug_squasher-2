@@ -105,10 +105,15 @@ int main(int argc, char *argv[]) {
     // Add action (i.e., jump & select) key
     rv = gfm_addVirtualKey(&(game.actionHnd), game.pCtx);
     ASSERT_NR(rv == GFMRV_OK);
+    // Add a key to generate GIFs
+    rv = gfm_addVirtualKey(&(game.gifHnd), game.pCtx);
+    ASSERT_NR(rv == GFMRV_OK);
     // TODO Add missing keys
     
     // TODO Customize the inputs
     rv = gfm_bindInput(game.pCtx, game.actionHnd, gfmPointer_button);
+    ASSERT_NR(rv == GFMRV_OK);
+    rv = gfm_bindInput(game.pCtx, game.gifHnd, gfmKey_f12);
     ASSERT_NR(rv == GFMRV_OK);
     
     // Initalize the FPS counter (will only work on DEBUG mode)

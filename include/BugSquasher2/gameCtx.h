@@ -37,6 +37,8 @@ struct stGameCtx {
     gfmSpriteset *pSset32x32;
     /** Handle of the action key */
     int actionHnd;
+    /** Handle for saving animated GIFs */
+    int gifHnd;
     /** Whether the game is running or something stopped it (code-wise) */
     int isRunning;
     /** Texture's handle */

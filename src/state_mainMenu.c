@@ -165,9 +165,9 @@ __ret:
  * @param  pGame The game "global" context
  */
 static gfmRV state_mainMenu_update(gameCtx *pGame) {
-    gfmInputState actionState;
+    gfmInputState actionState, gifState;
     gfmRV rv;
-    int actionCount, camWidth, camHeight, elapsed, y;
+    int actionCount, camWidth, camHeight, elapsed, gifCount, y;
     mainMenuCtx *pMainMenu;
     
     // Sanitize arguments
@@ -225,7 +225,7 @@ static gfmRV state_mainMenu_update(gameCtx *pGame) {
     // Update the text timer (it will only render on positive times, and should
     // flick every half second)
     pMainMenu->textTimer += elapsed;
-    if (pMainMenu->textTimer >= 500) {
+    if (pMainMenu->textTimer >= 750) {
         pMainMenu->textTimer -= 1000;
     }
     
@@ -240,6 +240,15 @@ static gfmRV state_mainMenu_update(gameCtx *pGame) {
         pGame->state = game_playState;
         pGame->switchState = 1;
     }
+    
+    // Get the gif button state
+    rv = gfm_getKeyState(&gifState, &gifCount, pGame->pCtx, pGame->gifHnd);
+    ASSERT_NR(rv == GFMRV_OK);
+    //if ((gifState & gfmInput_justPressed) == gfmInput_justPressed) {
+    //    rv = gfm_recordGif(pGame->pCtx, 10000, "./promo/mainMenu.gif", 20/*len*/,
+    //        0/*saveToCurrentPath*/);
+    //    ASSERT_NR(rv == GFMRV_OK);
+    //}
     
     rv = GFMRV_OK;
 __ret:
@@ -274,6 +283,23 @@ static gfmRV state_mainMenu_draw(gameCtx *pGame) {
     // Draw the text
     if (pMainMenu->textTimer >= 0) {
         rv = gfmText_draw(pMainMenu->pText, pGame->pCtx);
+        ASSERT_NR(rv == GFMRV_OK);
+    }
+    
+    // If the animation finished playing
+    if (pMainMenu->titleAnimation >= sizeof(titleData) / sizeof(int)) {
+        // Draw my icon
+        rv = gfm_drawTile(pGame->pCtx, pGame->pSset32x32, 272/*x*/, /*y*/200,
+                15/*tile*/);
+        ASSERT_NR(rv == GFMRV_OK);
+        
+        // Draw the options button
+        rv = gfm_drawTile(pGame->pCtx, pGame->pSset32x32, 8/*x*/, /*y*/200,
+                14/*tile*/);
+        ASSERT_NR(rv == GFMRV_OK);
+        // Draw the options icon
+        rv = gfm_drawTile(pGame->pCtx, pGame->pSset16x16, 16/*x*/, /*y*/205,
+                41/*tile*/);
         ASSERT_NR(rv == GFMRV_OK);
     }
     
