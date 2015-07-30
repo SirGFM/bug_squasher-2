@@ -10,6 +10,7 @@
 #include <GFraMe/gframe.h>
 #include <GFraMe/gfmAssert.h>
 #include <GFraMe/gfmError.h>
+#include <GFraMe/gfmInput.h>
 #include <GFraMe/gfmSpriteset.h>
 
 #include <string.h>
@@ -100,6 +101,16 @@ int main(int argc, char *argv[]) {
     rv = loadAssets(&game);
     ASSERT_NR(rv == GFMRV_OK);
     
+    // Add all virtual keys
+    // Add action (i.e., jump & select) key
+    rv = gfm_addVirtualKey(&(game.actionHnd), game.pCtx);
+    ASSERT_NR(rv == GFMRV_OK);
+    // TODO Add missing keys
+    
+    // TODO Customize the inputs
+    rv = gfm_bindInput(game.pCtx, game.actionHnd, gfmPointer_button);
+    ASSERT_NR(rv == GFMRV_OK);
+    
     // Initalize the FPS counter (will only work on DEBUG mode)
     rv = gfm_initFPSCounter(game.pCtx, game.pSset8x8, 0/*firstTile*/);
     ASSERT_NR(rv == GFMRV_OK);
@@ -125,6 +136,9 @@ int main(int argc, char *argv[]) {
             default: rv = GFMRV_INTERNAL_ERROR;
         }
         ASSERT_NR(rv == GFMRV_OK);
+        
+        // Clear the switch flag
+        game.switchState = 0;
     }
     
     rv = GFMRV_OK;

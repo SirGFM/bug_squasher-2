@@ -12,6 +12,7 @@
 /**  Define the possible game states */
 enum enGameState {
     game_mainMenu = 0,
+    game_playState,
     game_maxState,
 };
 typedef enum enGameState gameState;
@@ -34,10 +35,14 @@ struct stGameCtx {
     gfmSpriteset *pSset16x16;
     /** 32x32 spriteset */
     gfmSpriteset *pSset32x32;
+    /** Handle of the action key */
+    int actionHnd;
     /** Whether the game is running or something stopped it (code-wise) */
     int isRunning;
     /** Texture's handle */
     int iTex;
+    /** Flag that the state should change */
+    int switchState;
     /** The main menu context */
     mainMenuCtx *pMainMenu;
 };

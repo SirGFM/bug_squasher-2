@@ -9,6 +9,7 @@
 #include <GFraMe/gframe.h>
 #include <GFraMe/gfmAssert.h>
 #include <GFraMe/gfmError.h>
+#include <GFraMe/gfmInput.h>
 #include <GFraMe/gfmSpriteset.h>
 #include <GFraMe/gfmText.h>
 #include <GFraMe/gfmTilemap.h>
@@ -164,8 +165,9 @@ __ret:
  * @param  pGame The game "global" context
  */
 static gfmRV state_mainMenu_update(gameCtx *pGame) {
+    gfmInputState actionState;
     gfmRV rv;
-    int camWidth, camHeight, elapsed, y;
+    int actionCount, camWidth, camHeight, elapsed, y;
     mainMenuCtx *pMainMenu;
     
     // Sanitize arguments
@@ -227,6 +229,18 @@ static gfmRV state_mainMenu_update(gameCtx *pGame) {
         pMainMenu->textTimer -= 1000;
     }
     
+    // Get the action button state to, possibly, go to the play state
+    rv = gfm_getKeyState(&actionState, &actionCount, pGame->pCtx,
+            pGame->actionHnd);
+    ASSERT_NR(rv == GFMRV_OK);
+    
+    // TODO Check for button presses
+    if (actionState & gfmInput_pressed) {
+        // TODO Actually switch to the game_stageSelect
+        pGame->state = game_playState;
+        pGame->switchState = 1;
+    }
+    
     rv = GFMRV_OK;
 __ret:
     return rv;
@@ -285,7 +299,8 @@ gfmRV state_mainMenu(gameCtx *pGame) {
     ASSERT_NR(rv == GFMRV_OK);
     
     // Run until the window is closed
-    while (pGame->isRunning && gfm_didGetQuitFlag(pGame->pCtx) == GFMRV_FALSE) {
+    while (!pGame->switchState && pGame->isRunning
+            && gfm_didGetQuitFlag(pGame->pCtx) == GFMRV_FALSE) {
         rv = gfm_handleEvents(pGame->pCtx);
         ASSERT_NR(rv == GFMRV_OK);
         
