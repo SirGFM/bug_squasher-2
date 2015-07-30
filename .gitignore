@@ -30,3 +30,12 @@
 
 # Debug files
 *.dSYM/
+
+# Vim swap files
+*.swp
+
+# Original assets files (onlt needs the .bmp)
+*.xcf
+
+bin/*
+
