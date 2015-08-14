@@ -290,16 +290,16 @@ static gfmRV state_mainMenu_draw(gameCtx *pGame) {
     if (pMainMenu->titleAnimation >= sizeof(titleData) / sizeof(int)) {
         // Draw my icon
         rv = gfm_drawTile(pGame->pCtx, pGame->pSset32x32, 272/*x*/, /*y*/200,
-                15/*tile*/);
+                15/*tile*/, 0/*isFlipped*/);
         ASSERT_NR(rv == GFMRV_OK);
         
         // Draw the options button
         rv = gfm_drawTile(pGame->pCtx, pGame->pSset32x32, 8/*x*/, /*y*/200,
-                14/*tile*/);
+                14/*tile*/, 0/*isFlipped*/);
         ASSERT_NR(rv == GFMRV_OK);
         // Draw the options icon
         rv = gfm_drawTile(pGame->pCtx, pGame->pSset16x16, 16/*x*/, /*y*/205,
-                41/*tile*/);
+                41/*tile*/, 0/*isFlipped*/);
         ASSERT_NR(rv == GFMRV_OK);
     }
     
