@@ -1,6 +1,44 @@
 
-CC = gcc
-.SUFFIXES=.c .o
+#==============================================================================
+# Define every object required by compilation
+#==============================================================================
+  OBJS =                             \
+          $(OBJDIR)/main.o           \
+          $(OBJDIR)/state_mainMenu.o 
+#==============================================================================
+
+#==============================================================================
+# Basic settings
+#==============================================================================
+  CC := gcc
+# Check if should compile debug version
+  ifneq (,$(findstring debug, $(MAKECMDGOALS)))
+    DEBUG := yes
+    RELEASE := no
+  endif
+# Check if should compile release version
+  ifneq (,$(findstring release, $(MAKECMDGOALS)))
+    DEBUG := no
+    RELEASE := yes
+  endif
+# By default, compile in debug mode
+  ifeq ($(MAKECMDGOALS),)
+    DEBUG := yes
+    RELEASE := no
+  endif
+#==============================================================================
+
+#==============================================================================
+# Clear the suffixes' default rule, since there's an explicit one
+#==============================================================================
+.SUFFIXES:
+#==============================================================================
+
+#==============================================================================
+# Define all targets that doesn't match its generated file
+#==============================================================================
+.PHONY: all clean debug distclean release
+#==============================================================================
 
 #==============================================================================
 # Define compilation target
@@ -11,14 +49,6 @@ CC = gcc
   ifeq ($(DEBUG), yes)
     TARGET := $(TARGET)_dbg
   endif
-#==============================================================================
-
-#==============================================================================
-# Define every object required by compilation
-#==============================================================================
-  OBJS =                             \
-          $(OBJDIR)/main.o           \
-          $(OBJDIR)/state_mainMenu.o 
 #==============================================================================
 
 #==============================================================================
@@ -43,14 +73,15 @@ CC = gcc
     CFLAGS := $(CFLAGS) -m32
   endif
 # Add debug flags
-  ifneq ($(RELEASE), yes)
+  ifneq ($(DEBUG), yes)
     CFLAGS := $(CFLAGS) -g -O0 -DDEBUG
-  else
+  endif
+  ifeq ($(RELEASE), yes)
     CFLAGS := $(CFLAGS) -O3
   endif
 # Set flags required by OS
   ifeq ($(OS), Win)
-    CFLAGS := $(CFLAGS) -I"/d/windows/mingw/include"
+    CFLAGS := $(CFLAGS) -I"/d/windows/mingw/include" -I"/c/GFraMe/include"
   else
     CFLAGS := $(CFLAGS) -fPIC
   endif
@@ -61,25 +92,17 @@ CC = gcc
 #==============================================================================
   ifeq ($(RELEASE), yes)
     LFLAGS := -lGFraMe
-  else
+  endif
+  ifeq ($(DEBUG), yes)
     LFLAGS := -lGFraMe_dbg
   endif
-  LFLAGS := $(LFLAGS) -lm
 # Add libs and paths required by an especific OS
   ifeq ($(OS), Win)
-    ifeq ($(ARCH), x64)
-      LFLAGS := $(LFLAGS) -L"/d/windows/mingw/lib"
-    else
-      LFLAGS := $(LFLAGS) -L"/d/windows/mingw/mingw32/lib"
-    endif
+    LFLAGS := -L"/c/GFraMe/lib" $(LFLAGS) -L"/d/windows/mingw/mingw32/lib"
     LFLAGS := -mwindows -lmingw32 $(LFLAGS) -lSDL2main
-# TODO Add OpenGL
   else
     LFLAGS := -L/usr/lib/GFraMe/ $(LFLAGS)
-# TODO Add OpenGL
   endif
-# Add SDL2, GFraMe and pthread libs (pthread is used for loading stuff)
-  LFLAGS := $(LFLAGS) -lSDL2 -lpthread
 #==============================================================================
 
 #==============================================================================
@@ -104,10 +127,18 @@ all: MAKEDIRS $(BINDIR)/$(TARGET)
 #==============================================================================
 
 #==============================================================================
+# Dummy release and debug rules
+#==============================================================================
+release: all
+
+debug: all
+#==============================================================================
+
+#==============================================================================
 # Rule for actually building the game
 #==============================================================================
 $(BINDIR)/$(TARGET): MAKEDIRS $(OBJS)
-	gcc $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
 #==============================================================================
 
 #==============================================================================
@@ -131,12 +162,19 @@ $(OBJDIR):
 	mkdir -p $(BINDIR)
 #==============================================================================
 
-.PHONY: clean mostlyclean
+#==============================================================================
+# Removes all built objects (use emscript_clean to clear the emscript stuff)
+#==============================================================================
 clean:
 	rm -f $(OBJS)
 	rm -f $(BINDIR)/$(TARGET)
+#==============================================================================
 
-mostlyclean: clean
+#==============================================================================
+# Remove all built objects and target directories
+#==============================================================================
+distclean: clean
 	rmdir $(OBJDIR)
 	rmdir $(BINDIR)
+#==============================================================================
 

@@ -38,18 +38,18 @@
  */
 static gfmRV loadAssets(gameCtx *pGame) {
     gfmRV rv;
-    
-    // Sanitize arguments
+
+    /* Sanitize arguments */
     ASSERT(pGame, GFMRV_ARGUMENTS_BAD);
-    
-    // Load the texture
+
+    /* Load the texture */
     rv = gfm_loadTextureStatic(&(pGame->iTex), pGame->pCtx, TEXTURE, COLOR_KEY);
     ASSERT_NR(rv == GFMRV_OK);
-    // Set it as the default
+    /* Set it as the default */
     rv = gfm_setDefaultTexture(pGame->pCtx, pGame->iTex);
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Create the spritesets
+
+    /* Create the spritesets */
     rv = gfm_createSpritesetCached(&(pGame->pSset8x8), pGame->pCtx, pGame->iTex,
             8/*tw*/, 8/*th*/);
     ASSERT_NR(rv == GFMRV_OK);
@@ -62,7 +62,7 @@ static gfmRV loadAssets(gameCtx *pGame) {
     rv = gfm_createSpritesetCached(&(pGame->pSset32x32), pGame->pCtx,
             pGame->iTex, 32/*tw*/, 32/*th*/);
     ASSERT_NR(rv == GFMRV_OK);
-    
+
     rv = GFMRV_OK;
 __ret:
     return rv;
@@ -77,76 +77,85 @@ __ret:
 int main(int argc, char *argv[]) {
     gameCtx game;
     gfmRV rv;
-    
-    // Set all default values
+
+    /* Set all default values */
     memset(&game, 0x0, sizeof(gameCtx));
-    
-    // Alloc and initialize the library
+
+    /* Alloc and initialize the library */
     rv = gfm_getNew(&(game.pCtx));
     ASSERT_NR(rv == GFMRV_OK);
     rv = gfm_initStatic(game.pCtx, "com.gfmgamecorner", "BugSquasher2");
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Initialize the window (last param is whether the user can resize the wnd)
-    rv = gfm_initGameWindow(game.pCtx, VWIDTH, VHEIGHT, WND_WIDTH, WND_HEIGHT,
-            0);
+
+    /* TODO Load the configurations file */
+    /* TODO Set the video backend based on the config file */
+    rv = gfm_setVideoBackend(game.pCtx, GFM_VIDEO_GL3);
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Load all assets
-    // TODO push this into another thread and play an animation
+
+    /* Initialize the window (last param is whether the user can resize the
+     * wnd) */
+    rv = gfm_initGameWindow(game.pCtx, VWIDTH, VHEIGHT, WND_WIDTH, WND_HEIGHT,
+            0/*userResizable*/, 0/*VSYNC*/);
+    ASSERT_NR(rv == GFMRV_OK);
+
+    /* Load all assets */
+    /* TODO push this into another thread and play an animation */
     rv = loadAssets(&game);
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Add all virtual keys
-    // Add action (i.e., jump & select) key
+
+    /* Add all virtual keys */
+
+    /* Add action (i.e., jump & select) key */
     rv = gfm_addVirtualKey(&(game.actionHnd), game.pCtx);
     ASSERT_NR(rv == GFMRV_OK);
-    // Add a key to generate GIFs
+    /* Add a key to generate GIFs */
     rv = gfm_addVirtualKey(&(game.gifHnd), game.pCtx);
     ASSERT_NR(rv == GFMRV_OK);
-    // TODO Add missing keys
-    
-    // TODO Customize the inputs
+    /* TODO Add missing keys */
+
+    /* TODO Customize the inputs */
     rv = gfm_bindInput(game.pCtx, game.actionHnd, gfmPointer_button);
     ASSERT_NR(rv == GFMRV_OK);
     rv = gfm_bindInput(game.pCtx, game.gifHnd, gfmKey_f12);
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Initalize the FPS counter (will only work on DEBUG mode)
+
+    /* Initalize the FPS counter (will only work on DEBUG mode) */
+#ifdef DEBUG
     rv = gfm_initFPSCounter(game.pCtx, game.pSset8x8, 0/*firstTile*/);
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Set the main loop framerate
+#endif
+
+    /* Set the main loop framerate */
     rv = gfm_setStateFrameRate(game.pCtx, FPS, FPS);
     ASSERT_NR(rv == GFMRV_OK);
-    // Initialize the timer
+    /* Initialize the timer */
     rv = gfm_setFPS(game.pCtx, FPS);
     ASSERT_NR(rv == GFMRV_OK);
-    
-    // Run until the window is closed
+
+    /* Run until the window is closed */
     game.isRunning = 1;
     game.state = game_mainMenu;
     while (game.isRunning && gfm_didGetQuitFlag(game.pCtx) == GFMRV_FALSE) {
-        // TODO Remove this! (only here to be able to run the game until any
-        // state is done)
+        /* TODO Remove this! (only here to be able to run the game until any
+         * state is done) */
         rv = gfm_handleEvents(game.pCtx);
         ASSERT_NR(rv == GFMRV_OK);
-        
+
         switch(game.state) {
             case game_mainMenu: rv = state_mainMenu(&game); break;
             default: rv = GFMRV_INTERNAL_ERROR;
         }
         ASSERT_NR(rv == GFMRV_OK);
-        
-        // Clear the switch flag
+
+        /* Clear the switch flag */
         game.switchState = 0;
     }
-    
+
     rv = GFMRV_OK;
 __ret:
-    // Make sure everything is cleaned, even on error
+    /* Make sure everything is cleaned, even on error */
     gfm_free(&(game.pCtx));
-    
+
     return rv;
 }
 
